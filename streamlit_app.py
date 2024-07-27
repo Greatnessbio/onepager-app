@@ -10,8 +10,10 @@ import difflib
 # Initialize session state
 if 'content' not in st.session_state:
     st.session_state.content = ""
-if 'enhanced_content' not in st.session_state:
-    st.session_state.enhanced_content = ""
+if 'enhanced_content_wp' not in st.session_state:
+    st.session_state.enhanced_content_wp = ""
+if 'enhanced_content_html' not in st.session_state:
+    st.session_state.enhanced_content_html = ""
 if 'audit' not in st.session_state:
     st.session_state.audit = ""
 if 'summary' not in st.session_state:
@@ -137,7 +139,7 @@ def enhance_content(audit, content, analysis):
         st.error("OpenRouter API key not found. Please set the OPENROUTER_API_KEY environment variable.")
         return None
 
-    prompt = f"""Based on the following keyword audit, original content, and analysis, create an enhanced version of the content.
+    prompt = f"""Based on the following keyword audit, original content, and analysis, create an enhanced version of the content in both WordPress and HTML formats.
 
 Keyword audit:
 <keyword_audit>
@@ -154,11 +156,15 @@ Analysis and recommendations:
 {analysis}
 </analysis>
 
-Provide your enhanced content in the following format:
+Provide your enhanced content in the following formats:
 
-<enhanced_content>
+<enhanced_content_wp>
 Your full enhanced content here, ready to be pasted into WordPress
-</enhanced_content>
+</enhanced_content_wp>
+
+<enhanced_content_html>
+Your full enhanced content here in HTML format, including appropriate HTML tags for structure (e.g., <h1>, <p>, <ul>, etc.)
+</enhanced_content_html>
 
 Ensure that your enhanced content:
 - Naturally incorporates more keywords from the audit
@@ -166,6 +172,7 @@ Ensure that your enhanced content:
 - Maintains the original tone and style of the page
 - Does not overstuff keywords or make the content sound unnatural
 - Addresses the recommendations from the analysis
+- Uses appropriate HTML tags in the HTML version to improve structure and SEO
 """
 
     response = requests.post(
@@ -233,7 +240,8 @@ def main():
                         
                         if enhanced_result:
                             st.success("Content enhanced successfully!")
-                            st.session_state.enhanced_content = enhanced_result.split('<enhanced_content>')[1].split('</enhanced_content>')[0].strip()
+                            st.session_state.enhanced_content_wp = enhanced_result.split('<enhanced_content_wp>')[1].split('</enhanced_content_wp>')[0].strip()
+                            st.session_state.enhanced_content_html = enhanced_result.split('<enhanced_content_html>')[1].split('</enhanced_content_html>')[0].strip()
                         else:
                             st.error("Failed to enhance content.")
                     else:
@@ -251,12 +259,20 @@ def main():
             st.subheader("Content Analysis:")
             st.text_area("Analysis and recommendations", st.session_state.summary, height=300)
         
-        if 'enhanced_content' in st.session_state and st.session_state.enhanced_content:
-            st.subheader("Enhanced Content:")
-            st.text_area("Enhanced content (ready for WordPress)", st.session_state.enhanced_content, height=400)
+        if 'enhanced_content_wp' in st.session_state and st.session_state.enhanced_content_wp:
+            st.subheader("Enhanced Content (WordPress format):")
+            st.text_area("Enhanced content (ready for WordPress)", st.session_state.enhanced_content_wp, height=400)
+        
+        if 'enhanced_content_html' in st.session_state and st.session_state.enhanced_content_html:
+            st.subheader("Enhanced Content (HTML format):")
+            st.text_area("Enhanced content (HTML)", st.session_state.enhanced_content_html, height=400)
             
+            st.subheader("HTML Preview:")
+            st.components.v1.html(st.session_state.enhanced_content_html, height=600)
+            
+        if 'enhanced_content_wp' in st.session_state and st.session_state.enhanced_content_wp:
             st.subheader("Highlighted Changes:")
-            highlighted_diff = highlight_diff(st.session_state.content, st.session_state.enhanced_content)
+            highlighted_diff = highlight_diff(st.session_state.content, st.session_state.enhanced_content_wp)
             st.markdown(highlighted_diff, unsafe_allow_html=True)
 
 if __name__ == "__main__":
